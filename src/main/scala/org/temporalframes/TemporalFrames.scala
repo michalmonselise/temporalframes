@@ -126,9 +126,38 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
   }
   def volatility(distance: String = "Hamming"): Double = {
     val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
-    val edges_with_col = this._edges.withColumn("col_arr",array(time_columns.map(c => col(c)):_*))
-    def hamming
+    val edges_with_col = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*))
+
+    def hamming(x: mutable.WrappedArray[String]): Double = {
+      var total = 0
+      var pos = x(0)
+      for (i <- until x
+      .length
+      )
+      {
+        if (pos != x(i)) {
+          total = total + 1
+        }
+        pos = x(i)
+      }
+      total
+    }
+
+    def euclidean(x: mutable.WrappedArray[String]): Double = {
+      total = 0
+      val y = x.toArray[String].map(_.toDouble)
+      pos = y(0)
+      for (i <- until y
+      .length
+      )
+      {
+        total = total + math.pow(y(i) - pos, 2)
+        pos = y(i)
+      }
+      math.sqrt(total)
+    }
   }
+
 }
 
 
