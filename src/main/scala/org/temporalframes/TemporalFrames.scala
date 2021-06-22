@@ -124,16 +124,19 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     val edges_with_burst = this._edges.withColumn("col_arr",array(time_columns.map(c => col(c)):_*)).withColumn("burstiness", burst_udf(col("col_arr")))
     edges_with_burst.select("src", "dst", "burstiness")
   }
+
+  def extractDouble(expectedNumber: Any): Double = {
+    expectedNumber.toString.toDouble
+  }
+
   def volatility(distance: String = "Hamming"): Double = {
     val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
     val edges_with_col = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*))
 
     def hamming(x: mutable.WrappedArray[String]): Double = {
-      var total = 0
+      var total: Double = 0.0
       var pos = x(0)
-      for (i <- until x
-      .length
-      )
+      for (i <- 0 until x.length)
       {
         if (pos != x(i)) {
           total = total + 1
@@ -144,18 +147,27 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     }
 
     def euclidean(x: mutable.WrappedArray[String]): Double = {
-      total = 0
+      var total: Double = 0.0
       val y = x.toArray[String].map(_.toDouble)
-      pos = y(0)
-      for (i <- until y
-      .length
-      )
-      {
+      var pos = y(0)
+      for (i <- 0 until y.length) {
         total = total + math.pow(y(i) - pos, 2)
         pos = y(i)
       }
       math.sqrt(total)
     }
+
+    if (distance == "Hamming") {
+      def dist_hamming = spark.udf.register("hamm", hamming _)
+      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_hamming(col("col_arr")))
+    } else if{
+      def dist_euclidean = spark.udf.register("eucl", euclidean _)
+      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_euclidean(col("col_arr")))
+    } else {
+      val new_df = this._edges.withColumn("dist", lit(0))
+    }
+    val new_df_filter = new_df.where(col("dist") !== 0)
+    extractDouble(new_df_filter.agg(avg("dist")).collect()(0)(0))
   }
 
 }
