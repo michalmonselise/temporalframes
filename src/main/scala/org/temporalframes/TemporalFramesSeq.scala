@@ -35,12 +35,13 @@ import scala.collection.mutable._
 import scala.math._
 
 class TemporalFrameSeq(@transient private val _vertices: DataFrame,
-                    @transient private val _edges: DataFrame) extends GraphFrame {
+                    @transient private val _edges: DataFrame, timestampCol: String) extends GraphFrame {
 
   override def vertices: DataFrame = _vertices
   override def edges: DataFrame = _edges
+  def timestampCol: String = timestampCol
   def construct_timestamps(): Array[Int] = {
-    val time_stamps = time_columns.map(split_string).map(x => x.toInt).sorted
+    val time_stamps = time_columns.select("timestamp").distinct
     time_stamps
   }
 
@@ -48,9 +49,8 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   def graph_snapshot(timestamp: Int): GraphFrame = {
     try {
-      val snapshot_edges = _edges.filter("time_" + timestamp.toString() + " == 1")
-      val selectedColumns: Seq[Column] = snapshot_edges.columns.filterNot(_.startsWith("time_")).map(c => col(c))
-      GraphFrame(_vertices, snapshot_edges.select(selectedColumns: _*))
+      val snapshot_edges = _edges.filter(col(timestampCol) === timestamp)
+      GraphFrame(_vertices, snapshot_edges)
     } catch {
       case e: Exception => {
         print("The timestamp does not exist in our snapshots")
