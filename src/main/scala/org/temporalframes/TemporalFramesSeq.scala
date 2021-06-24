@@ -34,15 +34,12 @@ import spark.implicits._
 import scala.collection.mutable._
 import scala.math._
 
-class TemporalFrame(@transient private val _vertices: DataFrame,
+class TemporalFrameSeq(@transient private val _vertices: DataFrame,
                     @transient private val _edges: DataFrame) extends GraphFrame {
 
   override def vertices: DataFrame = _vertices
   override def edges: DataFrame = _edges
   def construct_timestamps(): Array[Int] = {
-    def split_string(x: String): String = {x.split("_")(1)}
-    val columns = this._edges.columns
-    val time_columns = columns.filter(n => n.startsWith("time_"))
     val time_stamps = time_columns.map(split_string).map(x => x.toInt).sorted
     time_stamps
   }
@@ -113,8 +110,8 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
       val mean = mean_arr(res_seq)
       val std = std_arr(res_seq)
       if ((std + mean) != 0){
-      (std - mean) / (std + mean)
-        } else {
+        (std - mean) / (std + mean)
+      } else {
         0
       }
     }
