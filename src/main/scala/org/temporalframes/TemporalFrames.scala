@@ -39,19 +39,19 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
 
   override def vertices: DataFrame = _vertices
   override def edges: DataFrame = _edges
-  def construct_timestamps(): Array[Int] = {
+  def construct_timestamps(): Array[String] = {
     def split_string(x: String): String = {x.split("_")(1)}
     val columns = this._edges.columns
     val time_columns = columns.filter(n => n.startsWith("time_"))
-    val time_stamps = time_columns.map(split_string).map(x => x.toInt).sorted
+    val time_stamps = time_columns.map(split_string).map(x => x).sorted
     time_stamps
   }
 
   var timestamps = construct_timestamps()
 
-  def graph_snapshot(timestamp: Int): GraphFrame = {
+  def graph_snapshot(timestamp: String): GraphFrame = {
     try {
-      val snapshot_edges = _edges.filter("time_" + timestamp.toString() + " == 1")
+      val snapshot_edges = _edges.filter("time_" + timestamp + " == 1")
       val selectedColumns: Seq[Column] = snapshot_edges.columns.filterNot(_.startsWith("time_")).map(c => col(c))
       GraphFrame(_vertices, snapshot_edges.select(selectedColumns: _*))
     } catch {
@@ -62,7 +62,7 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     }
   }
   def topological_corr_coef(): Double = {
-    val col_names = timestamps.map(x => "time_" + x.toString())
+    val col_names = timestamps.map(x => "time_" + x))
     val unique_vals = this._edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
     var tot = 0.0
     var count = 0
