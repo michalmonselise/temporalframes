@@ -47,7 +47,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   var timestamps = construct_timestamps()
 
-  def graph_snapshot(timestamp: Int): GraphFrame = {
+  def graph_snapshot(timestamp: String): GraphFrame = {
     try {
       val snapshot_edges = _edges.filter(col(timestampCol) === timestamp)
       GraphFrame(_vertices, snapshot_edges)
@@ -180,12 +180,12 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
 
 
-//val edge_path = "gs://shrp2/shrp2_edge.csv"
-//val vertex_path = "gs://shrp2/shrp2_vertex.csv"
-//val shrp2_edge = spark.read.format("csv").option("header", "true").option("delimiter", ",").load(edge_path)
-//val shrp2_vertex = spark.read.format("csv").option("header", "true").option("delimiter", ",").load(vertex_path)
+//val path = "gs://graph-files/college_timestamp.csv"
+//val edge = spark.read.format("csv").option("header", "true").option("delimiter", ",").load(path)
 
-//val graph = GraphFrame(shrp2_vertex, shrp2_edge)
+//val vertex = edge.select("src").distinct.withColumnRenamed("src", "id").union(edge.select("dst").distinct.withColumnRenamed("dst", "id"))
 
-//val temp_graph = new TemporalFrame(shrp2_vertex, shrp2_edge)
+//val graph = GraphFrame(vertex, edge)
+
+//val temp_graph = new TemporalFrameSeq(vertex, edge, "timestamp")
 
