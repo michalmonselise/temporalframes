@@ -62,6 +62,15 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
       }
     }
   }
+
+  def transform(): DataFrame = {
+    val df = this.edges.groupBy($"src", $"dst").pivot(timestampCol).agg(count(timestampCol)).na.fill(0)
+    val cols = df.columns.filter(x => (x != "src") & (x != "dst"))
+    df.withColumn("col_arr",array(time_columns.map(c => col(c)):_*)).select($"src", $"dst", $"col_arr")
+  }
+
+  val transformedEdges = transform()
+
   def topological_corr_coef(): Double = {
     val col_names = timestamps.map(x => "time_" + x.toString())
     val unique_vals = this._edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
@@ -100,7 +109,6 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def burstiness(): DataFrame = {
-    val cols = this._edges.columns.filter(p => p.contains("time"))
     def generate_burstiness(x: WrappedArray[String]): Double = {
       val y = x.toArray[String].map(_.toDouble)
       var res_seq = Seq[Int]()
@@ -120,9 +128,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
       }
     }
     def burst_udf = spark.udf.register("burst", generate_burstiness _)
-    val columns = this._edges.columns
-    val time_columns = columns.filter(n => n.startsWith("time_"))
-    val edges_with_burst = this._edges.withColumn("col_arr",array(time_columns.map(c => col(c)):_*)).withColumn("burstiness", burst_udf(col("col_arr")))
+    val edges_with_burst = transformedEdges.withColumn("burstiness", burst_udf(col("col_arr")))
     edges_with_burst.select("src", "dst", "burstiness")
   }
 
