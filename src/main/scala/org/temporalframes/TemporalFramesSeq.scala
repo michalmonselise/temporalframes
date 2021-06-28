@@ -41,9 +41,11 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   override def vertices: DataFrame = _vertices
   override def edges: DataFrame = _edges
-  def timestampCol: String = timestampCol
+  def timestampColumn: String = timestampCol
   def construct_timestamps(): DataFrame = {
-    val time_stamps = this._edges.select(timestampCol).distinct.sort(desc(timestampCol)).withColumn("timestampId",monotonicallyIncreasingId)
+    val time_stamps_distinct = this._edges.select(timestampColumn).distinct.sort(asc(timestampColumn))
+    time_stamps_distinct.createOrReplaceTempView("timestamp_table")
+    val time_stamps = spark.sql("select row_number() over (order by " + timestampColumn + " ) as timestampId , * from timestamp_table")
     time_stamps
   }
 
