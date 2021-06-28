@@ -64,9 +64,9 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def transform(): DataFrame = {
-    val df = this.edges.groupBy($"src", $"dst").pivot(timestampCol).agg(count(timestampCol)).na.fill(0)
+    val df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0)
     val cols = df.columns.filter(x => (x != "src") & (x != "dst"))
-    df.withColumn("col_arr",array(time_columns.map(c => col(c)):_*)).select($"src", $"dst", $"col_arr")
+    df.withColumn("col_arr",array(cols.map(c => col(c)):_*)).select(col("src"), col("dst"), col("col_arr"))
   }
 
   val transformedEdges = transform()
