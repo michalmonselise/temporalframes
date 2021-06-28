@@ -34,14 +34,16 @@ import spark.implicits._
 import scala.collection.mutable._
 import scala.math._
 
+import TemporalFrame._
+
 class TemporalFrameSeq(@transient private val _vertices: DataFrame,
                     @transient private val _edges: DataFrame, timestampCol: String) extends GraphFrame {
 
   override def vertices: DataFrame = _vertices
   override def edges: DataFrame = _edges
   def timestampCol: String = timestampCol
-  def construct_timestamps(): Array[Int] = {
-    val time_stamps = time_columns.select("timestamp").distinct
+  def construct_timestamps(): DataFrame = {
+    val time_stamps = this._edges.select(timestampCol).distinct.sort(desc(timestampCol)).withColumn("timestampId",monotonicallyIncreasingId)
     time_stamps
   }
 
