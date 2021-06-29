@@ -62,12 +62,12 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     }
   }
   def topological_corr_coef(): Double = {
-    val col_names = timestamps.map(x => "time_" + x))
-    val unique_vals = this._edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
+    val col_names = timestamps.map(x => "time_" + x)
+    val unique_vals = this.edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
     var tot = 0.0
     var count = 0
     for (b <- unique_vals) {
-      val subset = this._edges.filter($"src" === b)
+      val subset = this.edges.filter(col("src") === b)
       for (a <- 0 to col_names.size - 2) {
         val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
           .first.get(0).toString.toDouble)
@@ -133,7 +133,7 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
     val edges_with_col = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*))
 
-    def hamming(x: mutable.WrappedArray[String]): Double = {
+    def hamming(x: WrappedArray[String]): Double = {
       var total: Double = 0.0
       var pos = x(0)
       for (i <- 0 until x.length)
@@ -146,7 +146,7 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
       total
     }
 
-    def euclidean(x: mutable.WrappedArray[String]): Double = {
+    def euclidean(x: WrappedArray[String]): Double = {
       var total: Double = 0.0
       val y = x.toArray[String].map(_.toDouble)
       var pos = y(0)
@@ -157,14 +157,18 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
       math.sqrt(total)
     }
 
-    if (distance == "Hamming") {
-      def dist_hamming = spark.udf.register("hamm", hamming _)
-      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_hamming(col("col_arr")))
-    } else if{
-      def dist_euclidean = spark.udf.register("eucl", euclidean _)
-      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_euclidean(col("col_arr")))
-    } else {
-      val new_df = this._edges.withColumn("dist", lit(0))
+    val new_df = {
+      if (distance == "Hamming") {
+        def dist_hamming = spark.udf.register("hamm", hamming _)
+
+        this.edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_hamming(col("col_arr")))
+      } else if (distance == "Euclidean") {
+        def dist_euclidean = spark.udf.register("eucl", euclidean _)
+
+        this.edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_euclidean(col("col_arr")))
+      } else {
+        this.edges.withColumn("dist", lit(0))
+      }
     }
     val new_df_filter = new_df.where(col("dist") !== 0)
     extractDouble(new_df_filter.agg(avg("dist")).collect()(0)(0))

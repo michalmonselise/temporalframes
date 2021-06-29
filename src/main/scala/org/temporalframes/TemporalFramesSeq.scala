@@ -43,7 +43,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   override def edges: DataFrame = _edges
   def timestampColumn: String = timestampCol
   def construct_timestamps(): DataFrame = {
-    val time_stamps_distinct = this._edges.select(timestampColumn).distinct.sort(asc(timestampColumn))
+    val time_stamps_distinct = this.edges.select(timestampColumn).distinct.sort(asc(timestampColumn))
     time_stamps_distinct.createOrReplaceTempView("timestamp_table")
     val time_stamps = spark.sql("select row_number() over (order by " + timestampColumn + " ) as timestampId , * from timestamp_table")
     time_stamps
@@ -53,7 +53,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   def graph_snapshot(timestamp: String): GraphFrame = {
     try {
-      val snapshot_edges = _edges.filter(col(timestampCol) === timestamp)
+      val snapshot_edges = this.edges.filter(col(timestampCol) === timestamp)
       GraphFrame(_vertices, snapshot_edges)
     } catch {
       case e: Exception => {
@@ -71,19 +71,22 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   val transformedEdges = transform()
 
-  def topological_corr_coef(): Double = {
-    def top_corr(x: mutable.WrappedArray[Double]): Double = {
-      var total = 0.0
-      for (a <- 0 until x.length) {
+  def to_temporalframe(frame: TemporalFrameSeq): TemporalFrame = {
+    val edge_df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0.0)
+    val new_names = for (x <- edge_df.columns if (x != "src") & (x != "dst")) yield "time_" + x
+    val edge_renamed = edge_df.toDF(new_names: _*)
+    val a = new TemporalFrame(this.vertices, edge_renamed)
+    a
+  }
 
-      }
-    }
+  def topological_corr_coef(): Double = {
+
     val col_names = timestamps.map(x => "time_" + x.toString())
-    val unique_vals = this._edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
+    val unique_vals = this.edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
     var tot = 0.0
     var count = 0
     for (b <- unique_vals) {
-      val subset = this._edges.filter(col("src") === b)
+      val subset = this.edges.filter(col("src") === b)
       for (a <- 0 to col_names.size - 2) {
         val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
           .first.get(0).toString.toDouble)
@@ -178,7 +181,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
         transformedEdges.withColumn("dist", dist_euclidean(col("col_arr")))
       } else {
-        this._edges.withColumn("dist", lit(0))
+        this.edges.withColumn("dist", lit(0))
       }
     }
       val new_df_filter = new_df.where(col("dist") !== 0)
