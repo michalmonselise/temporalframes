@@ -71,7 +71,7 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
       for (a <- 0 to col_names.size - 2) {
         val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
           .first.get(0).toString.toDouble)
-        val denom = (math.sqrt(subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble *
+        val denom = (math.sqrt(subset.agg(sum(col_names(a))).first.get(0).toString.toDouble *
           subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble))
         if (denom != 0.0) {
           tot = tot + num / denom

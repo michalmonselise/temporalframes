@@ -64,7 +64,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def transform(): DataFrame = {
-    val df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0)
+    val df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0.0)
     val cols = df.columns.filter(x => (x != "src") & (x != "dst"))
     df.withColumn("col_arr",array(cols.map(c => col(c)):_*)).select(col("src"), col("dst"), col("col_arr"))
   }
@@ -72,6 +72,12 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   val transformedEdges = transform()
 
   def topological_corr_coef(): Double = {
+    def top_corr(x: mutable.WrappedArray[Double]): Double = {
+      var total = 0.0
+      for (a <- 0 until x.length) {
+
+      }
+    }
     val col_names = timestamps.map(x => "time_" + x.toString())
     val unique_vals = this._edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
     var tot = 0.0
@@ -81,7 +87,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
       for (a <- 0 to col_names.size - 2) {
         val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
           .first.get(0).toString.toDouble)
-        val denom = (math.sqrt(subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble *
+        val denom = (math.sqrt(subset.agg(sum(col_names(a))).first.get(0).toString.toDouble *
           subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble))
         if (denom != 0.0) {
           tot = tot + num / denom
@@ -109,12 +115,12 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def burstiness(): DataFrame = {
-    def generate_burstiness(x: WrappedArray[String]): Double = {
-      val y = x.toArray[String].map(_.toDouble)
+    def generate_burstiness(x: WrappedArray[Double]): Double = {
+      //val y = x.toArray[String].map(_.toDouble)
       var res_seq = Seq[Int]()
       var pos = 0
-      for (i <- 0 until y.length) {
-        if (y(i) > 0) {
+      for (i <- 0 until x.length) {
+        if (x(i) > 0) {
           res_seq = res_seq :+ (i - pos)
           pos = i
         }
@@ -137,8 +143,6 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def volatility(distance: String = "Hamming"): Double = {
-    val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
-    val edges_with_col = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*))
 
     def hamming(x: mutable.WrappedArray[String]): Double = {
       var total: Double = 0.0
@@ -166,10 +170,10 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
     if (distance == "Hamming") {
       def dist_hamming = spark.udf.register("hamm", hamming _)
-      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_hamming(col("col_arr")))
+      val new_df = transformedEdges.withColumn("dist", dist_hamming(col("col_arr")))
     } else if{
       def dist_euclidean = spark.udf.register("eucl", euclidean _)
-      val new_df = this._edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("dist", dist_euclidean(col("col_arr")))
+      val new_df = transformedEdges.withColumn("dist", dist_euclidean(col("col_arr")))
     } else {
       val new_df = this._edges.withColumn("dist", lit(0))
     }
