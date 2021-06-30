@@ -64,7 +64,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def transform(): DataFrame = {
-    val df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0.0)
+    val df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).count().na.fill(0.0)
     val cols = df.columns.filter(x => (x != "src") & (x != "dst"))
     df.withColumn("col_arr",array(cols.map(c => col(c)):_*)).select(col("src"), col("dst"), col("col_arr"))
   }
@@ -72,8 +72,11 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   val transformedEdges = transform()
 
   def to_temporalframe(frame: TemporalFrameSeq): TemporalFrame = {
-    val edge_df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).agg(count(timestampCol)).na.fill(0.0)
-    val new_names = for (x <- edge_df.columns if (x != "src") & (x != "dst")) yield "time_" + x
+    val edge_df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).count().na.fill(0.0)
+    val new_names = for (x <- edge_df.columns) {
+      val prefix_str = if ((x != "src") && (x != "dst")) "time_" else ""
+      yield prefix_str + x
+    }
     val edge_renamed = edge_df.toDF(new_names: _*)
     val a = new TemporalFrame(this.vertices, edge_renamed)
     a
@@ -147,7 +150,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   def volatility(distance: String = "Hamming"): Double = {
 
-    def hamming(x: mutable.WrappedArray[String]): Double = {
+    def hamming(x: WrappedArray[String]): Double = {
       var total: Double = 0.0
       var pos = x(0)
       for (i <- 0 until x.length)
@@ -160,7 +163,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
       total
     }
 
-    def euclidean(x: mutable.WrappedArray[String]): Double = {
+    def euclidean(x: WrappedArray[String]): Double = {
       var total: Double = 0.0
       val y = x.toArray[String].map(_.toDouble)
       var pos = y(0)
