@@ -20,8 +20,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark._
 import org.apache.spark.graphx._
 
-import scala.collection.mutable
-import scala.collection.mutable.WrappedArray
 // To make some of the examples work we will also need RDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row

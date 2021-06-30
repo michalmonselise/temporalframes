@@ -20,8 +20,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark._
 import org.apache.spark.graphx._
 
-import scala.collection.mutable
-import scala.collection.mutable.WrappedArray
 // To make some of the examples work we will also need RDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
@@ -71,11 +69,14 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   val transformedEdges = transform()
 
-  def to_temporalframe(frame: TemporalFrameSeq): TemporalFrame = {
+  def to_temporalframe(): TemporalFrame = {
     val edge_df = this.edges.groupBy(col("src"), col("dst")).pivot(timestampCol).count().na.fill(0.0)
-    val new_names = for (x <- edge_df.columns) {
-      val prefix_str = if ((x != "src") && (x != "dst")) "time_" else ""
-      yield prefix_str + x
+    val new_names = for (x <- edge_df.columns) yield {
+      val prefix_str = {
+        if ((x != "src") && (x != "dst")) {"time_"
+        } else {""}
+      }
+      prefix_str + x
     }
     val edge_renamed = edge_df.toDF(new_names: _*)
     val a = new TemporalFrame(this.vertices, edge_renamed)
@@ -84,26 +85,28 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
   def topological_corr_coef(): Double = {
 
-    val col_names = timestamps.map(x => "time_" + x.toString())
-    val unique_vals = this.edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
-    var tot = 0.0
-    var count = 0
-    for (b <- unique_vals) {
-      val subset = this.edges.filter(col("src") === b)
-      for (a <- 0 to col_names.size - 2) {
-        val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
-          .first.get(0).toString.toDouble)
-        val denom = (math.sqrt(subset.agg(sum(col_names(a))).first.get(0).toString.toDouble *
-          subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble))
-        if (denom != 0.0) {
-          tot = tot + num / denom
-        }
-        count = count + 1
-      }
-    }
-    if (count > 0) {
-      tot / count
-    } else {0.0}
+    val pivoted = to_temporalframe()
+    pivoted.topological_corr_coef()
+    //val col_names = timestamps.map(x => "time_" + x.toString())
+    //val unique_vals = this.edges.dropDuplicates("src").select("src").collect().map(_(0)).toArray.map(_.toString).map(_.toInt)
+    //var tot = 0.0
+    //var count = 0
+    //for (b <- unique_vals) {
+    //  val subset = this.edges.filter(col("src") === b)
+    //  for (a <- 0 to col_names.size - 2) {
+    //    val num = (subset.withColumn("prod", col(col_names(a)) * col(col_names(a + 1))).agg(sum("prod"))
+    //      .first.get(0).toString.toDouble)
+    //    val denom = (math.sqrt(subset.agg(sum(col_names(a))).first.get(0).toString.toDouble *
+    //      subset.agg(sum(col_names(a + 1))).first.get(0).toString.toDouble))
+    //    if (denom != 0.0) {
+    //      tot = tot + num / denom
+    //    }
+    //    count = count + 1
+    //  }
+    //}
+    //if (count > 0) {
+    //  tot / count
+    //} else {0.0}
   }
 
   def mean_arr(x: Seq[Int]): Double = {
