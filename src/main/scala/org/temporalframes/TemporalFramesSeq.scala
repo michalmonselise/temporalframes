@@ -124,7 +124,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def burstiness(): DataFrame = {
-    def generate_burstiness(x: WrappedArray[Double]): Double = {
+    def generate_burstiness(x: WrappedArray[Int]): Double = {
       //val y = x.toArray[String].map(_.toDouble)
       var res_seq = Seq[Int]()
       var pos = 0
@@ -204,6 +204,59 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
 
 }
 
+object TemporalFrameSeq extends GraphFrame {
+  val ID: String = "id"
+
+  /**
+   * Column name for source vertices of edges.
+   *  - In [[GraphFrame.edges]], this is a column of vertex IDs.
+   *  - In [[GraphFrame.triplets]], this is a column of vertices with schema matching
+   * [[GraphFrame.vertices]].
+   */
+  val SRC: String = "src"
+
+  /**
+   * Column name for destination vertices of edges.
+   *  - In [[GraphFrame.edges]], this is a column of vertex IDs.
+   *  - In [[GraphFrame.triplets]], this is a column of vertices with schema matching
+   * [[GraphFrame.vertices]].
+   */
+  val DST: String = "dst"
+
+  /**
+   * Column name for edge in [[GraphFrame.triplets]].  In [[GraphFrame.triplets]],
+   * this is a column of edges with schema matching [[GraphFrame.edges]].
+   */
+  val EDGE: String = "edge"
+
+  /**
+   * Create a new [[TemporalFrameSeq]] from vertex and edge `DataFrame`s.
+   *
+   * @param vertices  Vertex DataFrame.  This must include a column "id" containing unique vertex IDs.
+   *           All other columns are treated as vertex attributes.
+   * @param edges  Edge DataFrame.  This must include columns "src" and "dst" containing source and
+   *           destination vertex IDs.  All other columns are treated as edge attributes.
+   * @param timestampCol String containing column name in the edges dataframe that indicates a timestamp.
+   * @return  New [[TemporalFrameSeq]] instance
+   */
+
+  def apply (vertices: DataFrame, edges: DataFrame, timestampCol: String): TemporalFrameSeq = {
+  require (vertices.columns.contains (ID),
+  s"Vertex ID column '$ID' missing from vertex DataFrame, which has columns: "
+  + vertices.columns.mkString (",") )
+  require (edges.columns.contains (SRC),
+  s"Source vertex ID column '$SRC' missing from edge DataFrame, which has columns: "
+  + edges.columns.mkString (",") )
+  require (edges.columns.contains (DST),
+  s"Destination vertex ID column '$DST' missing from edge DataFrame, which has columns: "
+  + edges.columns.mkString (",") )
+  require (edges.columns.contains (timestampCol),
+  s"Destination timestamp column '$timestampCol' missing from edge DataFrame, which has columns: "
+  + edges.columns.mkString (",") )
+
+  new TemporalFrameSeq (vertices, edges, timestampCol)
+  }
+}
 
 
 
