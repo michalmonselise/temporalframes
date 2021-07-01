@@ -182,6 +182,58 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
 
 }
 
+object TemporalFrame extends GraphFrame {
+  val ID: String = "id"
+
+  /**
+   * Column name for source vertices of edges.
+   *  - In [[GraphFrame.edges]], this is a column of vertex IDs.
+   *  - In [[GraphFrame.triplets]], this is a column of vertices with schema matching
+   * [[GraphFrame.vertices]].
+   */
+  val SRC: String = "src"
+
+  /**
+   * Column name for destination vertices of edges.
+   *  - In [[GraphFrame.edges]], this is a column of vertex IDs.
+   *  - In [[GraphFrame.triplets]], this is a column of vertices with schema matching
+   * [[GraphFrame.vertices]].
+   */
+  val DST: String = "dst"
+
+  /**
+   * Column name for edge in [[GraphFrame.triplets]].  In [[GraphFrame.triplets]],
+   * this is a column of edges with schema matching [[GraphFrame.edges]].
+   */
+  val EDGE: String = "edge"
+
+  /**
+   * Create a new [[TemporalFrame]] from vertex and edge `DataFrame`s.
+   *
+   * @param vertices  Vertex DataFrame.  This must include a column "id" containing unique vertex IDs.
+   *           All other columns are treated as vertex attributes.
+   * @param edges  Edge DataFrame.  This must include columns "src" and "dst" containing source and
+   *           destination vertex IDs.  All other columns are treated as edge attributes.
+   * @return  New [[TemporalFrame]] instance
+   */
+
+  def apply (vertices: DataFrame, edges: DataFrame): TemporalFrame = {
+    require (vertices.columns.contains (ID),
+      s"Vertex ID column '$ID' missing from vertex DataFrame, which has columns: "
+        + vertices.columns.mkString (",") )
+    require (edges.columns.contains (SRC),
+      s"Source vertex ID column '$SRC' missing from edge DataFrame, which has columns: "
+        + edges.columns.mkString (",") )
+    require (edges.columns.contains (DST),
+      s"Destination vertex ID column '$DST' missing from edge DataFrame, which has columns: "
+        + edges.columns.mkString (",") )
+    require (edges.columns.exists(item => item.startsWith("time")),
+      s"Destination time prefix in at least one column missing from edge DataFrame, which has columns: "
+        + edges.columns.mkString (",") )
+
+    new TemporalFrame (vertices, edges)
+  }
+}
 
 
 
