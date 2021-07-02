@@ -31,3 +31,10 @@ import spark.implicits._
 
 import scala.collection.mutable._
 import scala.math._
+
+def volatility_hamming(gf: Seq[GraphFrame])): Double = {
+  var total: Long = 0
+  for (i <- 0 to gf.length - 2) {
+    total = total + gf(i).edges.count + gf(i+1).edges.count - gf(i).edges.join(gf(i+1).edges, Seq("src", "dst")).count
+  }
+}

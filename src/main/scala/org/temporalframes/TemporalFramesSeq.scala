@@ -124,7 +124,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
   }
 
   def burstiness(): DataFrame = {
-    def generate_burstiness(x: WrappedArray[Int]): Double = {
+    def generate_burstiness(x: WrappedArray[BigInt]): Double = {
       //val y = x.toArray[String].map(_.toDouble)
       var res_seq = Seq[Int]()
       var pos = 0
@@ -267,5 +267,5 @@ object TemporalFrameSeq extends GraphFrame {
 
 //val graph = GraphFrame(vertex, edge)
 
-//val temp_graph = new TemporalFrameSeq(vertex, edge, "timestamp")
+//val temp_graph = new TemporalFrameSeq(vertex, edge, "date")
 
