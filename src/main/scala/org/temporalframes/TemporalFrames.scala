@@ -49,7 +49,7 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
 
   def graph_snapshot(timestamp: String): GraphFrame = {
     try {
-      val snapshot_edges = _edges.filter("time_" + timestamp + " == 1")
+      val snapshot_edges = _edges.filter("time_" + timestamp + " > 0")
       val selectedColumns: Seq[Column] = snapshot_edges.columns.filterNot(_.startsWith("time_")).map(c => col(c))
       GraphFrame(_vertices, snapshot_edges.select(selectedColumns: _*))
     } catch {
