@@ -26,7 +26,7 @@ We can convert from `TemporalFrameSeq` to `TemporalFrame` using the function `to
 
 ### Snapshots
 
-Snapshots can be extracted using the `graph_snapshot` function by providing the timestamp of the snapshot. If the timestamp doesn't exist, an error message will be returned.
+Snapshots can be extracted using the `graph_snapshot` function by providing the timestamp of the snapshot. If the timestamp doesn't exist, an error message will be returned. This function returns a static GraphFrame.
 
 For example:
 
