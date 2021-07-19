@@ -24,6 +24,20 @@ We can convert from `TemporalFrameSeq` to `TemporalFrame` using the function `to
 
 `val temp_graph_seq = temp_graph.to_temporalframe()`
 
+### Snapshots
+
+Snapshots can be extracted using the `graph_snapshot` function by providing the timestamp of the snapshot. If the timestamp doesn't exist, an error message will be returned.
+
+For example:
+
+`val snapshot = temp_graph.graph_snapshot('2018-01-05')`
+
+### Timestamps
+
+The `timestamp` function returns a dataframe with all timestamps.
+
+`val timestamps = temp_graph.timestamps()`
+
 ### Network Measures
 
 Currently, there are 3 functions defined in the package for computing network measures:
