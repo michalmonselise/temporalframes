@@ -1,24 +1,20 @@
 package org.temporalframes
 
-import java.util.Random
-
 import scala.reflect.runtime.universe.TypeTag
-
 import org.apache.spark.graphx.{Edge, Graph}
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions.{array, broadcast, col, count, explode, struct, udf, monotonically_increasing_id, expr}
+import org.apache.spark.sql.functions.{array, broadcast, col, count, explode, expr, monotonically_increasing_id, struct, udf}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.graphframes._
-
-
 import org.graphframes.lib._
 import org.graphframes.pattern._
-
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark._
 import org.apache.spark.graphx._
+
+import scala.collection.mutable
 
 // To make some of the examples work we will also need RDD
 import org.apache.spark.rdd.RDD
@@ -171,6 +167,18 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     val new_df_filter = new_df.where(col("dist") !== 0)
     extractDouble(new_df_filter.agg(avg("dist")).collect()(0)(0))
   }
+
+  def temporal_pagerank(alpha: Double = 0.15, beta Double = 1.0, timestamp): DataFrame = {
+
+    def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
+      Double r = 0.0
+      Double s = 0.0
+      for (i <- 0 until x.length)
+    }
+
+  }
+
+
 
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
