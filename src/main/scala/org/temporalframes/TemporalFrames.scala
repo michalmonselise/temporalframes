@@ -169,13 +169,36 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
   }
 
   def temporal_pagerank(alpha: Double = 0.15, beta Double = 1.0, timestamp): DataFrame = {
-
-    def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
-      Double r = 0.0
-      Double s = 0.0
-      for (i <- 0 until x.length)
+    val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
+    def normalize_tuple(x: Double, y: Double): (Double, Double) = {
+      val norm_factor = math.sqrt(x * x + y * y)
+      if (norm_factor > 0.0) {
+        norm_factor = 1.0
+      }
+      (x / norm_factor, y / norm_factor)
     }
-
+    def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
+      Double r_src = 0.0
+      Double r_dst = 0.0
+      Double s_src = 0.0
+      Double s_dst = 0.0
+      for (i <- 0 until x.length) {
+        if (x(i) > 0) {
+          r_src = r_src + (1 - alpha)
+          s_src = s_src + (1 - alpha)
+          r_dst = r_dst + s_src * alpha
+          if (beta  < 1) {
+            s_dst = s_dst + s_src * (1 - beta) * alpha
+            s_src = s_src * beta
+          } else {
+            s_dst = s_dst + s_src * alpha
+            s_src = 0
+          }
+        }
+      }
+      normalize_tuple(r_src, r_dst)._1
+    }
+    this.edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("tpr", edge_rank(col("col_arr"))).select("src", "dst", "tpr")
   }
 
 
