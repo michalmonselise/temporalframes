@@ -171,17 +171,17 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
   def temporal_pagerank(alpha: Double = 0.15, beta Double = 1.0, timestamp): DataFrame = {
     val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
     def normalize_tuple(x: Double, y: Double): (Double, Double) = {
-      val norm_factor = math.sqrt(x * x + y * y)
+      var norm_factor = math.sqrt(x * x + y * y)
       if (norm_factor > 0.0) {
         norm_factor = 1.0
       }
       (x / norm_factor, y / norm_factor)
     }
     def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
-      Double r_src = 0.0
-      Double r_dst = 0.0
-      Double s_src = 0.0
-      Double s_dst = 0.0
+      var r_src = 0.0
+      var r_dst = 0.0
+      var s_src = 0.0
+      var s_dst = 0.0
       for (i <- 0 until x.length) {
         if (x(i) > 0) {
           r_src = r_src + (1 - alpha)
