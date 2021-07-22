@@ -38,7 +38,7 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
                     @transient private val _edges: DataFrame, timestampCol: String) extends GraphFrame {
 
   override def vertices: DataFrame = _vertices
-  override def edges: DataFrame = _edges
+  override def edges: DataFrame = _edges.dropDuplicates("src", "dst", timestampCol)
   def timestampColumn: String = timestampCol
   def construct_timestamps(): DataFrame = {
     val time_stamps_distinct = this.edges.select(timestampColumn).distinct.sort(asc(timestampColumn))
