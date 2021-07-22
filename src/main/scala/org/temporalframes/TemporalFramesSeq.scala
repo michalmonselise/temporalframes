@@ -194,6 +194,13 @@ class TemporalFrameSeq(@transient private val _vertices: DataFrame,
     extractDouble(new_df_filter.agg(avg("dist")).collect()(0)(0))
   }
 
+  def temporal_pagerank(alpha: Double=0.15, beta: Double=1): DataFrame = {
+    def replace_value(df, column, row, value): DataFrame = {
+      df.withColumn(column, when(col(column) === row, value)
+        .otherwise(col(column)))
+    }
+  }
+
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name

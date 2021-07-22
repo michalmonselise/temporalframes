@@ -168,39 +168,43 @@ class TemporalFrame(@transient private val _vertices: DataFrame,
     extractDouble(new_df_filter.agg(avg("dist")).collect()(0)(0))
   }
 
-  def temporal_pagerank(alpha: Double = 0.15, beta: Double = 1.0): DataFrame = {
-    val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
-    def normalize_tuple(x: Double, y: Double): (Double, Double) = {
-      var norm_factor = math.sqrt(x * x + y * y)
-      if (norm_factor == 0.0) {
-        norm_factor = 1.0
-      }
-      (x / norm_factor, y / norm_factor)
-    }
-    def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
-      var r_src = 0.0
-      var r_dst = 0.0
-      var s_src = 0.0
-      var s_dst = 0.0
-      for (i <- 0 until x.length) {
-        if (x(i).toDouble > 0) {
-          r_src = r_src + (1 - alpha)
-          s_src = s_src + (1 - alpha)
-          r_dst = r_dst + s_src * alpha
-          if (beta  < 1) {
-            s_dst = s_dst + s_src * (1 - beta) * alpha
-            s_src = s_src * beta
-          } else {
-            s_dst = s_dst + s_src * alpha
-            s_src = 0
-          }
-        }
-      }
-      normalize_tuple(r_src, r_dst)._1
-    }
-    def pr_udf = spark.udf.register("e_udf", edge_rank _)
-    this.edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("tpr", pr_udf(col("col_arr"), lit(alpha), lit(beta))).select("src", "dst", "tpr")
-  }
+
+//  def temporal_pagerank(alpha: Double = 0.15, beta: Double = 1.0): DataFrame = {
+//    val time_columns = this._edges.columns.filter(n => n.startsWith("time_"))
+//    def normalize_tuple(x: Double, y: Double): (Double, Double) = {
+//      var norm_factor = math.sqrt(x * x + y * y)
+//      if (norm_factor == 0.0) {
+//        norm_factor = 1.0
+//      }
+//      (x / norm_factor, y / norm_factor)
+//    }
+//    def edge_rank(x: WrappedArray[String], alpha: Double, beta: Double): Double = {
+//      var r_src = 0.0
+//      var r_dst = 0.0
+//      var s_src = 0.0
+//      var s_dst = 0.0
+//      for (i <- 0 until x.length) {
+//        if (x(i).toDouble > 0) {
+//          r_src = r_src + (1 - alpha)
+//          s_src = s_src + (1 - alpha)
+//          r_dst = r_dst + s_src * alpha
+//          if (beta  < 1) {
+//            s_dst = s_dst + s_src * (1 - beta) * alpha
+//            s_src = s_src * beta
+//          } else {
+//            s_dst = s_dst + s_src * alpha
+//            s_src = 0
+//          }
+//        }
+//      }
+//      //normalize_tuple(r_src, r_dst)._1
+//      r_src
+//    }
+//    def pr_udf = spark.udf.register("e_udf", edge_rank _)
+//    val res = this.edges.withColumn("col_arr", array(time_columns.map(c => col(c)): _*)).withColumn("tpr", pr_udf(col("col_arr"), lit(alpha), lit(beta))).select("src", "dst", "tpr")
+//
+//  }
+
 
 
 
