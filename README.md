@@ -45,3 +45,5 @@ Currently, there are 3 functions defined in the package for computing network me
 - Burstiness
 - Temporal Correlation Coefficient
 - Temporal Volatility
+
+Temporal PageRank soon to be implemented
