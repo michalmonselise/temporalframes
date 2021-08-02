@@ -4,7 +4,7 @@ Temporal Graphs for Apache Spark
 
 ### Defining TemporalFrames
 
-TemporalFrames can be one of two data structures:
+TemporalFrames is a Scala library for Apache Spark for representing temporal graphs. A temporal graph can be one of two data structures:
  
 #### TemporalFrame
 
